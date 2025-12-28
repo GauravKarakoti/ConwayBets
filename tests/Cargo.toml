@@ -7,7 +7,7 @@ license = "Apache-2.0"
 authors = ["Gaurav Karakoti karakotigaurav12@gmail.com"]
 
 [dependencies]
-linera-sdk = { version = "0.15", features = ["test"] }
+linera-sdk = { version = "0.15.6", features = ["test"] }
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.68"
 thiserror = "1.0.44"
@@ -19,7 +19,7 @@ uuid = { version = "1.5", features = ["v4", "serde"] }
 anyhow = "1.0.75"
 
 [dev-dependencies]
-linera-sdk = { version = "0.15", features = ["test"] }
+linera-sdk = { version = "0.15.6", features = ["test"] }
 tempfile = "3.8"
 criterion = { version = "0.5", features = ["html_reports"] }
 rand = "0.8"
