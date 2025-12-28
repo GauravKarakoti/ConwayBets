@@ -1,0 +1,11 @@
+[package]
+name = "linera"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+linera-sdk = { version = "0.15", features = ["test"] }
+serde = { version = "1.0", features = ["derive"] }
+
+[lib]
+crate-type = ["cdylib"]

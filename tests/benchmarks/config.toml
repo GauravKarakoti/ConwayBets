@@ -1,0 +1,30 @@
+[default]
+iterations = 10
+warmup_time = 1000  # ms
+measurement_time = 3000  # ms
+sample_size = 20
+
+[workloads.light]
+users = 100
+markets = 20
+bets_per_market = 50
+concurrency = 4
+
+[workloads.medium]
+users = 500
+markets = 50
+bets_per_market = 100
+concurrency = 8
+
+[workloads.heavy]
+users = 1000
+markets = 100
+bets_per_market = 200
+concurrency = 16
+
+[thresholds]
+market_creation_ms = 200
+bet_placement_ms = 100
+resolution_ms = 300
+query_ms = 20
+min_tps = 50
