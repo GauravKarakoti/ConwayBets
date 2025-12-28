@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { WalletProvider, WalletButton } from './lib/wallet-connector';
+import { WalletProvider } from './lib/wallet-connector';
 import { getConwayBetsClient } from './lib/linera-client';
 import { useMarkets } from './lib/hooks/useMarkets';
 import { formatCurrency, formatAddress, timeUntil } from './lib/utils';
 import './App.css';
+import { WalletConnector } from './components/WalletConnector';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'markets' | 'portfolio' | 'create'>('markets');
@@ -52,7 +53,7 @@ function App() {
                 <span className="network-dot"></span>
                 Conway Testnet
               </div>
-              <WalletButton />
+              <WalletConnector />
             </div>
           </div>
 
@@ -334,10 +335,10 @@ function App() {
               <a href="https://linera.io" target="_blank" rel="noopener noreferrer">
                 Linera Network
               </a>
-              <a href="https://docs.linera.io" target="_blank" rel="noopener noreferrer">
+              <a href="https://linera.dev/protocol/overview.html" target="_blank" rel="noopener noreferrer">
                 Documentation
               </a>
-              <a href="https://github.com/your-org/conwaybets" target="_blank" rel="noopener noreferrer">
+              <a href="https://github.com/GauravKarakoti/conwaybets" target="_blank" rel="noopener noreferrer">
                 GitHub
               </a>
             </div>

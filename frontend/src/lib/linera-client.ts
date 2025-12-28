@@ -1,5 +1,16 @@
-import { LineraClient, LineraQuery, LineraMutation, Subscription } from '@linera/client';
+import { lineraAdapter } from './linera-adapter';
 import { EventEmitter } from 'events';
+
+// Define interfaces locally as they are not exported by @linera/client
+interface LineraQuery {
+  query: string;
+  variables?: Record<string, any>;
+}
+
+interface LineraMutation {
+  mutation: string;
+  variables?: Record<string, any>;
+}
 
 export interface Market {
   id: string;
@@ -45,29 +56,27 @@ export interface PortfolioPosition {
 }
 
 export class ConwayBetsClient {
-  private client: LineraClient;
   private eventEmitter: EventEmitter;
-  private reconnectAttempts: number = 0;
-  private maxReconnectAttempts: number = 5;
-  private subscription?: Subscription;
+  private pollingInterval: NodeJS.Timeout | null = null;
 
-  constructor(endpoint: string, private applicationId: string) {
-    this.client = new LineraClient({
-      endpoint,
-      applicationId,
-      reconnect: true,
-      reconnectInterval: 3000,
-    });
+  constructor(private endpoint: string, private applicationId: string) {
     this.eventEmitter = new EventEmitter();
   }
 
   async connect(): Promise<boolean> {
     try {
-      await this.client.connect();
-      console.log('Connected to Linera Conway testnet');
-      return true;
+      // Connection is handled by LineraAdapter/WalletConnector.
+      // We just ensure the application is set if connected.
+      if (lineraAdapter.isChainConnected()) {
+        if (!lineraAdapter.isApplicationSet()) {
+          await lineraAdapter.setApplication(this.applicationId);
+        }
+        console.log('ConwayBetsClient connected via Adapter');
+        return true;
+      }
+      return false;
     } catch (error) {
-      console.error('Failed to connect to Linera:', error);
+      console.error('Failed to connect to Linera application:', error);
       return false;
     }
   }
@@ -94,7 +103,7 @@ export class ConwayBetsClient {
       variables: { limit, offset },
     };
 
-    const result = await this.client.query(query);
+    const result = await lineraAdapter.queryApplication<{ data: { markets: Market[] } }>(query);
     return result.data.markets;
   }
 
@@ -120,7 +129,7 @@ export class ConwayBetsClient {
       variables: { marketId },
     };
 
-    const result = await this.client.query(query);
+    const result = await lineraAdapter.queryApplication<{ data: { market: Market } }>(query);
     return result.data.market;
   }
 
@@ -159,7 +168,9 @@ export class ConwayBetsClient {
       variables: { creator, title, description, endTime, outcomes },
     };
 
-    const result = await this.client.mutate(mutation);
+    // Note: If the backend expects actual operations instead of GraphQL mutations, 
+    // this might need adjustment, but we pass the mutation structure to the adapter.
+    const result = await lineraAdapter.queryApplication<{ data: { createMarket: { marketId: string } } }>(mutation);
     return result.data.createMarket.marketId;
   }
 
@@ -195,7 +206,7 @@ export class ConwayBetsClient {
       variables: { marketId, user, outcomeIndex, amount },
     };
 
-    const result = await this.client.mutate(mutation);
+    const result = await lineraAdapter.queryApplication<{ data: { placeBet: { receipt: { id: string, status: string } } } }>(mutation);
     return {
       receiptId: result.data.placeBet.receipt.id,
       status: result.data.placeBet.receipt.status,
@@ -226,55 +237,15 @@ export class ConwayBetsClient {
       variables: { userAddress },
     };
 
-    const result = await this.client.query(query);
+    const result = await lineraAdapter.queryApplication<{ data: { userPortfolio: UserPortfolio } }>(query);
     return result.data.userPortfolio;
   }
 
-  subscribeToMarketUpdates(marketId: string): Subscription {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-
-    this.subscription = this.client.subscribe({
-      query: `
-        subscription MarketUpdates($marketId: ID!) {
-          marketUpdated(id: $marketId) {
-            id
-            totalLiquidity
-            isResolved
-            winningOutcome
-            stateHash
-            updatedAt
-          }
-        }
-      `,
-      variables: { marketId },
-    });
-
-    return this.subscription;
-  }
-
-  subscribeToUserUpdates(userAddress: string): Subscription {
-    return this.client.subscribe({
-      query: `
-        subscription UserUpdates($userAddress: String!) {
-          userUpdated(address: $userAddress) {
-            totalValue
-            activeBets
-            positions {
-              marketId
-              currentValue
-            }
-          }
-        }
-      `,
-      variables: { userAddress },
-    });
-  }
-
-  // Fallback polling mechanism for when subscriptions fail
+  // Polling mechanism as fallback/replacement for subscriptions
   startPolling(marketId: string, interval: number = 5000): NodeJS.Timeout {
-    return setInterval(async () => {
+    if (this.pollingInterval) clearInterval(this.pollingInterval);
+    
+    this.pollingInterval = setInterval(async () => {
       try {
         const market = await this.getMarket(marketId);
         this.eventEmitter.emit('marketUpdate', market);
@@ -282,6 +253,15 @@ export class ConwayBetsClient {
         console.error('Polling failed:', error);
       }
     }, interval);
+    
+    return this.pollingInterval;
+  }
+
+  stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
   }
 
   on(event: string, listener: (...args: any[]) => void): void {
@@ -293,10 +273,8 @@ export class ConwayBetsClient {
   }
 
   disconnect(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
-    this.client.disconnect();
+    this.stopPolling();
+    // Adapter handles actual disconnect
   }
 }
 

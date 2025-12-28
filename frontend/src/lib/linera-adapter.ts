@@ -100,9 +100,9 @@ export class LineraAdapter {
     if (!this.provider) throw new Error("Not connected to Linera");
     if (!appId) throw new Error("Application ID is required");
 
-    const application = await this.provider.client
-      .frontend()
-      .application(appId);
+    // FIX: Access the application via the specific chain, not client.frontend()
+    const chain = await this.provider.client.chain(this.provider.chainId);
+    const application = await chain.application(appId);
 
     if (!application) throw new Error("Failed to get application");
     console.log("✅ Linera application set successfully!");

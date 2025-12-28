@@ -1,30 +1,31 @@
 import { useState, useEffect } from 'react';
-import { LineraClient } from '@linera/client';
 
 export const useMarketUpdates = (marketId: string) => {
     const [marketState, setMarketState] = useState(null);
-    const client = new LineraClient({ endpoint: process.env.LINERA_ENDPOINT });
+    const endpoint = import.meta.env.VITE_LINERA_ENDPOINT || 'https://conway.linera.io';
 
     useEffect(() => {
-        // Primary: GraphQL Subscription
-        const subscription = client.subscribe(
-            `subscription { marketState(id: "${marketId}") { id, totalLiquidity, isResolved } }`,
-            { marketId }
-        ).subscribe(({ data }: any) => {
-            setMarketState(data.marketState);
-        });
-
-        // Fallback: Server-Sent Events (SSE)
-        const eventSource = new EventSource(`https://conway.linera.io/events/market/${marketId}`);
+        // Use Server-Sent Events (SSE) for updates
+        // Note: Ensure your Linera service exposes this SSE endpoint
+        const eventSource = new EventSource(`${endpoint}/events/market/${marketId}`);
+        
         eventSource.onmessage = (event) => {
-            setMarketState(JSON.parse(event.data));
+            try {
+                setMarketState(JSON.parse(event.data));
+            } catch (e) {
+                console.error("Failed to parse market update", e);
+            }
+        };
+
+        eventSource.onerror = (err) => {
+            console.error("EventSource failed:", err);
+            eventSource.close();
         };
 
         return () => {
-            subscription.unsubscribe();
             eventSource.close();
         };
-    }, [marketId]);
+    }, [marketId, endpoint]);
 
     return marketState;
 };

@@ -105,29 +105,6 @@ export function useMarkets(options: UseMarketsOptions = {}) {
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, loading, loadMarkets]);
 
-  // Subscribe to market updates
-  useEffect(() => {
-    if (!markets.length) return;
-
-    const subscriptions = markets.map(market => 
-      client.subscribeToMarketUpdates(market.id)
-    );
-
-    // Listen for updates
-    const unsubscribe: any = client.on('marketUpdate', (updatedMarket: Market) => {
-      setMarkets(prev => 
-        prev.map(market => 
-          market.id === updatedMarket.id ? updatedMarket : market
-        )
-      );
-    });
-
-    return () => {
-      subscriptions.forEach(sub => sub.unsubscribe());
-      unsubscribe();
-    };
-  }, [client, markets]);
-
   return {
     markets,
     loading,

@@ -1,4 +1,3 @@
-import { DynamicWidget, DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
 import { useState, useEffect, createContext, useContext } from 'react';
 
 export interface WalletState {
@@ -314,35 +313,5 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
     </WalletContext.Provider>
-  );
-}
-
-export function WalletButton() {
-  const { wallet, connect, disconnect } = useWallet();
-
-  if (!wallet.isConnected) {
-    return (
-      <button
-        onClick={connect}
-        className="wallet-connect-button"
-      >
-        Connect Wallet
-      </button>
-    );
-  }
-
-  return (
-    <div className="wallet-info">
-      <div className="wallet-address">
-        {wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}
-      </div>
-      <div className="wallet-balance">{wallet.balance} TEST</div>
-      <button
-        onClick={disconnect}
-        className="wallet-disconnect-button"
-      >
-        Disconnect
-      </button>
-    </div>
   );
 }
