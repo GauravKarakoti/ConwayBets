@@ -1,13 +1,86 @@
-use linera_sdk::base::Owner;
-use linera_sdk::linera_base_types::{Amount, ApplicationId, ChainId};
+use linera_sdk::linera_base_types::{AccountOwner, Amount, ChainId};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::error::Error;
 
+// --- Definitions ---
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct MarketId {
+    pub chain_id: ChainId,
+    pub id: u64,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub enum Operation {
+    CreateMarket {
+        creator: AccountOwner,
+        title: String,
+        description: String,
+        end_time: u64,
+        outcomes: Vec<String>,
+    },
+    PlaceBet {
+        market_id: MarketId,
+        user: AccountOwner,
+        outcome_index: u32,
+        amount: Amount,
+    },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BetMessage {
+    pub market_id: MarketId,
+    pub user: AccountOwner,
+    pub outcome_index: u32,
+    pub amount: Amount,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum ConwayBetsMessage {
+    Initialize,
+    Bet(BetMessage),
+    SyncState {
+        market_id: MarketId,
+        state_hash: [u8; 32],
+        block_height: u64,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Status {
+    Finalized,
+    Pending,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Receipt {
+    pub id: u64,
+    pub status: Status,
+}
+
+impl Receipt {
+    pub fn new(id: u64, status: Status) -> Self {
+        Self { id, status }
+    }
+}
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct ConwayBets {
+    pub markets: BTreeMap<MarketId, Market>,
+    pub user_positions: BTreeMap<AccountOwner, Vec<UserPosition>>,
+    #[serde(skip)] 
+    pub next_market_id: u64,
+    #[serde(skip)]
+    pub next_bet_id: u64,
+}
+
+// --------------------------------
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Market {
     pub id: MarketId,
-    pub creator: Owner,
+    pub creator: AccountOwner,
     pub title: String,
     pub description: String,
     pub end_time: u64, // Unix timestamp
@@ -15,30 +88,58 @@ pub struct Market {
     pub total_liquidity: Amount,
     pub is_resolved: bool,
     pub winning_outcome: Option<u32>,
-    // Hash of the canonical state stored on the market's microchain
     pub state_hash: [u8; 32],
 }
 
-// A lightweight reference stored on user chains
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UserPosition {
-    pub market_id: Market,
-    pub outcome_index: u32,
-    pub amount: Amount,
-    pub state_hash: [u8; 32], // To verify against market chain
+impl Market {
+    pub fn new(chain_id: ChainId) -> MarketId {
+        MarketId { chain_id, id: 0 } 
+    }
 }
 
-impl<Receipt: Bit> ConwayBets {
-    // Operation to create a new market
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UserPosition {
+    pub market_id: MarketId,
+    pub outcome_index: u32,
+    pub amount: Amount,
+    pub state_hash: [u8; 32],
+}
+
+impl ConwayBets {
+    // Helper to access chain_id
+    fn context(&self) -> ContextStub {
+        ContextStub { chain_id: ChainId([0; 4].into()) }
+    }
+
+    // Helper to send messages
+    fn send_message(&self, _dest: ChainId, _msg: ConwayBetsMessage) {
+        // Placeholder
+    }
+
+    // Helper to lock funds
+    async fn lock_funds(&self, _user: AccountOwner, _amount: Amount) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+
+    // Helper to init state
+    async fn initialize_market_state(&self, _market_id: &MarketId) -> [u8; 32] {
+        [0; 32]
+    }
+
     pub async fn create_market(
         &mut self,
-        creator: Owner,
+        creator: AccountOwner,
         title: String,
         description: String,
         end_time: u64,
         outcomes: Vec<String>,
     ) {
-        let market_id = Market::new(self.context().chain_id());
+        self.next_market_id += 1;
+        let market_id = MarketId { 
+            chain_id: self.context().chain_id, 
+            id: self.next_market_id 
+        };
+        
         let state_hash = self.initialize_market_state(&market_id).await;
 
         let market = Market {
@@ -55,26 +156,22 @@ impl<Receipt: Bit> ConwayBets {
         };
 
         self.markets.insert(market_id, market);
-
-        // Cross-chain message: Notify the new market's microchain to activate
-        self.send_message(market_id.chain_id, MarketMessage::Initialize);
+        self.send_message(market_id.chain_id, ConwayBetsMessage::Initialize);
     }
 
-    // Operation to place a bet
     pub async fn place_bet(
         &mut self,
-        market_id: Market,
-        user: Owner,
+        market_id: MarketId,
+        user: AccountOwner,
         outcome_index: u32,
         amount: Amount,
-    ) -> Result<Receipt, dyn Error> {
-        // 1. Verify market exists and is open
-        let market = self.markets.get_mut(&market_id).ok_or(<dyn Error>::MarketNotFound)?;
+    ) -> Result<Receipt, Box<dyn Error>> {
+        let state_hash = self.markets.get(&market_id)
+            .ok_or("MarketNotFound")?
+            .state_hash;
 
-        // 2. Lock funds from the user's chain (user chain operation)
         self.lock_funds(user, amount).await?;
 
-        // 3. Create a cross-chain message to the market's microchain
         let bet_message = BetMessage {
             market_id,
             user,
@@ -83,15 +180,24 @@ impl<Receipt: Bit> ConwayBets {
         };
         self.send_message(market_id.chain_id, ConwayBetsMessage::Bet(bet_message));
 
-        // 4. Update local user portfolio reference
         let position = UserPosition {
             market_id,
             outcome_index,
             amount,
-            state_hash: market.state_hash,
+            state_hash,
         };
         self.user_positions.entry(user).or_insert(Vec::new()).push(position);
 
-        Ok(Receipt::new(bet_id, Status::Finalized))
+        self.next_bet_id += 1;
+        Ok(Receipt::new(self.next_bet_id, Status::Finalized))
+    }
+}
+
+struct ContextStub {
+    chain_id: ChainId,
+}
+impl ContextStub {
+    fn chain_id(&self) -> ChainId {
+        self.chain_id
     }
 }

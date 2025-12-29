@@ -6,6 +6,18 @@ edition = "2024"
 [dependencies]
 linera-sdk = { version = "0.15.6", features = ["test"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-graphql = "7.0.2" # Required for the Service
 
 [lib]
-crate-type = ["cdylib"]
+# "rlib" allows the binaries to import from lib.rs
+# "cdylib" is kept if you ever need the single wasm (optional here but good practice)
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "linera_contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "linera_service"
+path = "src/service.rs"
