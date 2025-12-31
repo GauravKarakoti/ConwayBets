@@ -1,13 +1,13 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
-mod lib;
+mod state; // Changed from mod lib;
 
 use linera_sdk::{
     ContractRuntime,
     Contract
 };
 use linera_sdk::abi::WithContractAbi;
-use linera::{ConwayBets, Operation, ConwayBetsMessage};
+use state::{ConwayBets, Operation, ConwayBetsMessage}; // Changed from linera::...
 
 pub struct ConwayBetsAbi;
 
@@ -24,12 +24,11 @@ impl Contract for ConwayBets {
 
     async fn load(runtime: ContractRuntime<Self>) -> Self {
         // Simplified load for state
-        linera::ConwayBets::default() 
+        state::ConwayBets::default() // Changed to state::ConwayBets
     }
 
     async fn instantiate(
         &mut self,
-        _runtime: ContractRuntime<Self>,
         _argument: Self::InstantiationArgument,
     ) {
         // Initialization logic if needed
@@ -37,7 +36,6 @@ impl Contract for ConwayBets {
 
     async fn execute_operation(
         &mut self,
-        _runtime: ContractRuntime<Self>,
         operation: Operation,
     ) -> Self::Response {
         match operation {
@@ -58,7 +56,7 @@ impl Contract for ConwayBets {
         // Handle cross-chain messages here
     }
 
-    async fn store(mut self, _runtime: ContractRuntime<Self>) {
+    async fn store(mut self) {
         // Save state logic
     }
 }
