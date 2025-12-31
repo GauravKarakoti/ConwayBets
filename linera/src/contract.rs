@@ -5,6 +5,7 @@ use linera_sdk::{
     abi::WithContractAbi,
     Contract, ContractRuntime,
 };
+use serde::{Deserialize, Serialize};
 
 pub struct ConwayBetsContract {
     state: ConwayBets,
@@ -16,9 +17,15 @@ impl WithContractAbi for ConwayBetsContract {
 
 linera_sdk::contract!(ConwayBetsContract);
 
+#[derive(Deserialize, Serialize)]
+#[derive(Debug)]
+pub struct InstantiationArgument {
+    pub initial_markets: Vec<String>, // assuming markets are strings, or use appropriate type
+}
+
 impl Contract for ConwayBetsContract {
     type Message = ConwayBetsMessage;
-    type InstantiationArgument = ();
+    type InstantiationArgument = InstantiationArgument;
     type Parameters = ();
     type EventValue = ();
 
