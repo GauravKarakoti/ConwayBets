@@ -2,6 +2,9 @@
 
 set -eu
 
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # 1. Initialize Wallet
 export LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
 linera wallet init --faucet="$LINERA_FAUCET_URL"
