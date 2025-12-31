@@ -1,37 +1,39 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
-mod state; // Changed from mod lib;
-
+use linera::{ConwayBets, ConwayBetsAbi, ConwayBetsMessage, Operation};
 use linera_sdk::{
-    ContractRuntime,
-    Contract
+    abi::WithContractAbi,
+    Contract, ContractRuntime,
 };
-use linera_sdk::abi::WithContractAbi;
-use state::{ConwayBets, Operation, ConwayBetsMessage}; // Changed from linera::...
 
-pub struct ConwayBetsAbi;
+pub struct ConwayBetsContract {
+    state: ConwayBets,
+}
 
-impl WithContractAbi for ConwayBets {
+impl WithContractAbi for ConwayBetsContract {
     type Abi = ConwayBetsAbi;
 }
 
-linera_sdk::contract!(ConwayBets);
+linera_sdk::contract!(ConwayBetsContract);
 
-impl Contract for ConwayBets {
+impl Contract for ConwayBetsContract {
     type Message = ConwayBetsMessage;
     type InstantiationArgument = ();
     type Parameters = ();
+    type EventValue = ();
 
-    async fn load(runtime: ContractRuntime<Self>) -> Self {
-        // Simplified load for state
-        state::ConwayBets::default() // Changed to state::ConwayBets
+    async fn load(_runtime: ContractRuntime<Self>) -> Self {
+        // Load the shared state into the local wrapper
+        ConwayBetsContract {
+            state: ConwayBets::default(),
+        }
     }
 
     async fn instantiate(
         &mut self,
         _argument: Self::InstantiationArgument,
     ) {
-        // Initialization logic if needed
+        // Initialization logic
     }
 
     async fn execute_operation(
@@ -40,23 +42,22 @@ impl Contract for ConwayBets {
     ) -> Self::Response {
         match operation {
             Operation::CreateMarket { creator, title, description, end_time, outcomes } => {
-                self.create_market(creator, title, description, end_time, outcomes).await;
+                self.state.create_market(creator, title, description, end_time, outcomes).await;
             }
             Operation::PlaceBet { market_id, user, outcome_index, amount } => {
-                let _ = self.place_bet(market_id, user, outcome_index, amount).await;
+                let _ = self.state.place_bet(market_id, user, outcome_index, amount).await;
             }
         }
     }
 
     async fn execute_message(
         &mut self,
-        _runtime: ContractRuntime<Self>,
         _message: Self::Message,
     ) {
         // Handle cross-chain messages here
     }
 
-    async fn store(mut self) {
+    async fn store(self) {
         // Save state logic
     }
 }

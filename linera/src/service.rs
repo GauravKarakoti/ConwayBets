@@ -1,41 +1,39 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
-mod state; // Changed from mod lib;
-
-use async_graphql::{EmptyMutation, EmptySubscription, Object, Schema}; // Imported EmptyMutation
+use async_graphql::{EmptyMutation, EmptySubscription, Object, Request, Response, Schema};
+use linera::{ConwayBets, ConwayBetsAbi};
 use linera_sdk::{
-    ServiceRuntime,
-    Service
+    abi::WithServiceAbi,
+    Service, ServiceRuntime,
 };
-use linera_sdk::abi::WithServiceAbi;
-use state::ConwayBets; // Changed from linera::ConwayBets
-use std::sync::Arc;
-use linera_sdk::http::{Request, Response};
 
-pub struct ConwayBetsAbi;
+pub struct ConwayBetsService {
+    state: ConwayBets,
+}
 
-impl WithServiceAbi for ConwayBets {
+impl WithServiceAbi for ConwayBetsService {
     type Abi = ConwayBetsAbi;
 }
 
-linera_sdk::service!(ConwayBets);
+linera_sdk::service!(ConwayBetsService);
 
-impl Service for ConwayBets {
+impl Service for ConwayBetsService {
     type Parameters = ();
 
-    async fn new(runtime: ServiceRuntime<Self>) -> Self {
-        // Load state for view
-        state::ConwayBets::default() // Changed to state::ConwayBets
+    async fn new(_runtime: ServiceRuntime<Self>) -> Self {
+        ConwayBetsService {
+            state: ConwayBets::default(),
+        }
     }
 
     async fn handle_query(&self, query: Request) -> Response {   
-        // Use the imported EmptyMutation from async_graphql
         let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription).finish();
         schema.execute(query).await
     }
 }
 
 struct QueryRoot;
+
 #[Object]
 impl QueryRoot {
     async fn hello(&self) -> String {
