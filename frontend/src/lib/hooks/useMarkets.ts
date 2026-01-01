@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { type Market, getConwayBetsClient } from '../linera-client';
+import { lineraAdapter } from '../linera-adapter'; // Import adapter
 import { debounce } from '../utils';
 
 export interface UseMarketsOptions {
@@ -12,15 +13,16 @@ export interface UseMarketsOptions {
   };
   autoRefresh?: boolean;
   refreshInterval?: number;
+  enabled?: boolean;
 }
 
 export function useMarkets(options: UseMarketsOptions = {}) {
   const {
     limit = 20,
-    offset = 0,
     filter = {},
     autoRefresh = false,
     refreshInterval = 10000,
+    enabled = true,
   } = options;
 
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -33,6 +35,14 @@ export function useMarkets(options: UseMarketsOptions = {}) {
 
   const loadMarkets = useCallback(
     debounce(async (loadMore: boolean = false) => {
+      // ADD THIS CHECK: 
+      // Ensure the Linera application is set before attempting to query.
+      // This prevents the "Application not set" error log.
+      if (!lineraAdapter.isApplicationSet()) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -90,8 +100,10 @@ export function useMarkets(options: UseMarketsOptions = {}) {
   }, [loading, hasMore, loadMarkets]);
 
   useEffect(() => {
-    loadMarkets(false);
-  }, [filter, loadMarkets]);
+    if (enabled) {
+      loadMarkets(false);
+    }
+  }, [filter, loadMarkets, autoRefresh, enabled]); // Added autoRefresh to trigger fetch when readiness changes
 
   useEffect(() => {
     if (!autoRefresh) return;
