@@ -8,6 +8,10 @@ import {
 import type { Wallet as DynamicWallet } from "@dynamic-labs/sdk-react-core";
 import { DynamicSigner } from "./dynamic-signer";
 
+// 1. Import the WASM file using the alias defined in vite.config.ts
+// @ts-ignore
+import lineraWasmUrl from "linera-wasm?url";
+
 export interface LineraProvider {
   client: Client;
   wallet: Wallet;
@@ -48,7 +52,11 @@ export class LineraAdapter {
         console.log("🔗 Connecting with Dynamic wallet:", address);
 
         try {
-          if (!this.wasmInitPromise) this.wasmInitPromise = initialize();
+          // 2. Pass the explicit WASM URL to initialize()
+          if (!this.wasmInitPromise) {
+            console.log("⚙️ Initializing Linera WASM from:", lineraWasmUrl);
+            this.wasmInitPromise = initialize(lineraWasmUrl);
+          }
           await this.wasmInitPromise;
           console.log("✅ Linera WASM modules initialized successfully");
         } catch (e) {
@@ -100,7 +108,6 @@ export class LineraAdapter {
     if (!this.provider) throw new Error("Not connected to Linera");
     if (!appId) throw new Error("Application ID is required");
 
-    // FIX: Access the application via the specific chain, not client.frontend()
     const chain = await this.provider.client.chain(this.provider.chainId);
     const application = await chain.application(appId);
 
@@ -164,5 +171,4 @@ export class LineraAdapter {
   }
 }
 
-// Export singleton instance
 export const lineraAdapter = LineraAdapter.getInstance();
