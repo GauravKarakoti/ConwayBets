@@ -55,7 +55,7 @@ export class LineraAdapter {
           // 2. Pass the explicit WASM URL to initialize()
           if (!this.wasmInitPromise) {
             console.log("⚙️ Initializing Linera WASM from:", lineraWasmUrl);
-            this.wasmInitPromise = initialize(lineraWasmUrl);
+            this.wasmInitPromise = initialize({ module_or_path: lineraWasmUrl });
           }
           await this.wasmInitPromise;
           console.log("✅ Linera WASM modules initialized successfully");
