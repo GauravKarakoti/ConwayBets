@@ -1,5 +1,4 @@
-import {
-  initialize,
+import initialize, {
   Faucet,
   Client,
   Wallet,

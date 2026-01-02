@@ -70,6 +70,12 @@ function lineraWasmPlugin() {
 }
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // ⚠️ IMPORTANT: Force the JS import to match the WASM location.
+      '@linera/client': path.resolve(__dirname, 'node_modules/@linera/client/dist/linera.js')
+    }
+  },
   plugins: [
     react(), 
     lineraWasmPlugin() // Register the custom resolver
@@ -79,6 +85,10 @@ export default defineConfig({
     exclude: ['@linera/client']
   },
   server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
+    },
     fs: {
       allow: ['..']
     }

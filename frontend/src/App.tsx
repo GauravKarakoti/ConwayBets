@@ -7,6 +7,7 @@ import { useMarkets } from './lib/hooks/useMarkets';
 import { formatCurrency, formatAddress, timeUntil } from './lib/utils';
 import './App.css';
 import { WalletConnector } from './components/WalletConnector';
+import { confluxESpace } from 'viem/chains';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'markets' | 'portfolio' | 'create'>('markets');
@@ -26,12 +27,14 @@ function App() {
       }
 
       try {
-        const rpcUrl = import.meta.env.VITE_LINERA_ENDPOINT || 'https://conway.linera.io';
+        const rpcUrl = import.meta.env.VITE_LINERA_ENDPOINT || 'https://faucet.testnet-conway.linera.net';
         // Connect adapter with the dynamic wallet
         await lineraAdapter.connect(primaryWallet, rpcUrl);
+        console.log("Linera adapter connected");
         
         // Connect client (sets application ID)
         const client = getConwayBetsClient();
+        console.log("Connecting ConwayBets client...");
         await client.connect();
         
         setIsLineraReady(true);

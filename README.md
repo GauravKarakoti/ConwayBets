@@ -45,7 +45,7 @@ linera service deploy-with-arguments \
 ### 3. Configure Conway Testnet
 ```bash
 # Set testnet endpoint
-export LINERA_ENDPOINT="https://conway.linera.io:443"
+export LINERA_ENDPOINT="https://faucet.testnet-conway.linera.net:443"
 
 # Fund wallet
 linera wallet request-faucet-funds

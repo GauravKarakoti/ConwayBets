@@ -283,13 +283,13 @@ let instance: ConwayBetsClient | null = null;
 
 export function getConwayBetsClient(): ConwayBetsClient {
   if (!instance) {
-    const endpoint = import.meta.env.VITE_LINERA_ENDPOINT || 'https://conway.linera.io';
+    const endpoint = import.meta.env.VITE_LINERA_ENDPOINT || 'https://faucet.testnet-conway.linera.net';
     const applicationId = import.meta.env.VITE_APPLICATION_ID;
     
     if (!applicationId) {
       throw new Error('VITE_APPLICATION_ID environment variable is required');
     }
-    
+    console.log("Creating new ConwayBetsClient instance...");
     instance = new ConwayBetsClient(endpoint, applicationId);
   }
   return instance;

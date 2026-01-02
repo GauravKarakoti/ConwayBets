@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export const useMarketUpdates = (marketId: string) => {
     const [marketState, setMarketState] = useState(null);
-    const endpoint = import.meta.env.VITE_LINERA_ENDPOINT || 'https://conway.linera.io';
+    const endpoint = import.meta.env.VITE_LINERA_ENDPOINT || 'https://faucet.testnet-conway.linera.net';
 
     useEffect(() => {
         // Use Server-Sent Events (SSE) for updates

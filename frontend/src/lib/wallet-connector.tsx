@@ -72,7 +72,7 @@ export class WalletService {
             symbol: 'TEST',
           },
           networkId: 1234,
-          rpcUrls: ['https://conway.linera.io'],
+          rpcUrls: ['https://faucet.testnet-conway.linera.net'],
           vanityName: 'Conway',
         },
       ],

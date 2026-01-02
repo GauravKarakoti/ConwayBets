@@ -33,7 +33,7 @@ linera service --port 8081 &
 # 5. Setup and Run Frontend
 echo "Setting up Frontend..."
 cd frontend
-echo "VITE_LINERA_ENDPOINT=https://conway.linera.io" > .env
+echo "VITE_LINERA_ENDPOINT=https://faucet.testnet-conway.linera.net" > .env
 echo "VITE_APPLICATION_ID=$APP_ID" >> .env
 npm install
 echo "Starting Frontend..."
