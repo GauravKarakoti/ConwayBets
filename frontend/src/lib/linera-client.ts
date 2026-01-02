@@ -59,7 +59,7 @@ export class ConwayBetsClient {
   private eventEmitter: EventEmitter;
   private pollingInterval: NodeJS.Timeout | null = null;
 
-  constructor(private endpoint: string, private applicationId: string) {
+  constructor(private applicationId: string) {
     this.eventEmitter = new EventEmitter();
   }
 
@@ -283,14 +283,13 @@ let instance: ConwayBetsClient | null = null;
 
 export function getConwayBetsClient(): ConwayBetsClient {
   if (!instance) {
-    const endpoint = import.meta.env.VITE_LINERA_ENDPOINT || 'https://faucet.testnet-conway.linera.net';
     const applicationId = import.meta.env.VITE_APPLICATION_ID;
     
     if (!applicationId) {
       throw new Error('VITE_APPLICATION_ID environment variable is required');
     }
     console.log("Creating new ConwayBetsClient instance...");
-    instance = new ConwayBetsClient(endpoint, applicationId);
+    instance = new ConwayBetsClient(applicationId);
   }
   return instance;
 }

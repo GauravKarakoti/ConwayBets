@@ -1,4 +1,4 @@
-import { formatUnits, parseUnits } from 'ethers';
+import { formatUnits } from 'ethers';
 
 // Format currency
 export function formatCurrency(amount: string, decimals: number = 18): string {

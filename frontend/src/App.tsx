@@ -7,7 +7,6 @@ import { useMarkets } from './lib/hooks/useMarkets';
 import { formatCurrency, formatAddress, timeUntil } from './lib/utils';
 import './App.css';
 import { WalletConnector } from './components/WalletConnector';
-import { confluxESpace } from 'viem/chains';
 
 function App() {
   const [activeTab, setActiveTab] = useState<'markets' | 'portfolio' | 'create'>('markets');
