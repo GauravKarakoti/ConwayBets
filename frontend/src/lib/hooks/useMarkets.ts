@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { type Market, getConwayBetsClient } from '../linera-client';
-import { lineraAdapter } from '../linera-adapter'; // Import adapter
+import { lineraAdapter } from '../linera-adapter';
 import { debounce } from '../utils';
 
 export interface UseMarketsOptions {
@@ -33,11 +33,13 @@ export function useMarkets(options: UseMarketsOptions = {}) {
 
   const client = getConwayBetsClient();
 
+  // FIX: Stabilize the filter object.
+  // The 'filter' passed from App.tsx is a new object reference on every render.
+  // We use JSON.stringify to ensure we only update when the CONTENT changes.
+  const stableFilter = useMemo(() => filter, [JSON.stringify(filter)]);
+
   const loadMarkets = useCallback(
-    debounce(async (loadMore: boolean = false) => {
-      // ADD THIS CHECK: 
-      // Ensure the Linera application is set before attempting to query.
-      // This prevents the "Application not set" error log.
+    debounce(async (offset: number) => {
       if (!lineraAdapter.isApplicationSet()) {
         setLoading(false);
         return;
@@ -47,26 +49,25 @@ export function useMarkets(options: UseMarketsOptions = {}) {
         setLoading(true);
         setError(null);
 
-        const currentOffset = loadMore ? markets.length : 0;
-        const loadedMarkets = await client.getAllMarkets(limit, currentOffset);
+        const loadedMarkets = await client.getAllMarkets(limit, offset);
 
-        // Apply filters
+        // Apply filters using the stableFilter captured in closure
         let filteredMarkets = loadedMarkets;
         
-        if (filter.resolved !== undefined) {
+        if (stableFilter.resolved !== undefined) {
           filteredMarkets = filteredMarkets.filter(
-            market => market.isResolved === filter.resolved
+            market => market.isResolved === stableFilter.resolved
           );
         }
         
-        if (filter.creator) {
+        if (stableFilter.creator) {
           filteredMarkets = filteredMarkets.filter(
-            market => market.creator.toLowerCase() === filter.creator!.toLowerCase()
+            market => market.creator.toLowerCase() === stableFilter.creator!.toLowerCase()
           );
         }
         
-        if (filter.search) {
-          const searchLower = filter.search.toLowerCase();
+        if (stableFilter.search) {
+          const searchLower = stableFilter.search.toLowerCase();
           filteredMarkets = filteredMarkets.filter(
             market =>
               market.title.toLowerCase().includes(searchLower) ||
@@ -74,11 +75,13 @@ export function useMarkets(options: UseMarketsOptions = {}) {
           );
         }
 
+        const isLoadMore = offset > 0;
+
         setMarkets(prev => 
-          loadMore ? [...prev, ...filteredMarkets] : filteredMarkets
+          isLoadMore ? [...prev, ...filteredMarkets] : filteredMarkets
         );
         setHasMore(filteredMarkets.length === limit);
-        setTotal(prev => loadMore ? prev + filteredMarkets.length : filteredMarkets.length);
+        setTotal(prev => isLoadMore ? prev + filteredMarkets.length : filteredMarkets.length);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load markets');
         console.error('Failed to load markets:', err);
@@ -86,31 +89,31 @@ export function useMarkets(options: UseMarketsOptions = {}) {
         setLoading(false);
       }
     }, 300),
-    [client, limit, filter, markets.length]
+    [client, limit, stableFilter] // Use stableFilter in dependency
   );
 
   const refresh = useCallback(() => {
-    loadMarkets(false);
+    loadMarkets(0);
   }, [loadMarkets]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
-      loadMarkets(true);
+      loadMarkets(markets.length);
     }
-  }, [loading, hasMore, loadMarkets]);
+  }, [loading, hasMore, loadMarkets, markets.length]);
 
   useEffect(() => {
     if (enabled) {
-      loadMarkets(false);
+      loadMarkets(0);
     }
-  }, [filter, loadMarkets, autoRefresh, enabled]); // Added autoRefresh to trigger fetch when readiness changes
+  }, [stableFilter, loadMarkets, autoRefresh, enabled]); // Use stableFilter here too
 
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       if (!loading) {
-        loadMarkets(false);
+        loadMarkets(0);
       }
     }, refreshInterval);
 
