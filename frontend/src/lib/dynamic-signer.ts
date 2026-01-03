@@ -1,4 +1,4 @@
-import type { Signer } from "@linera/client";
+import type { Signer } from "@linera/client-index";
 import type { Wallet as DynamicWallet } from "@dynamic-labs/sdk-react-core";
 import { isEthereumWallet } from "@dynamic-labs/ethereum";
 

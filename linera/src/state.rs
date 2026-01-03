@@ -147,7 +147,8 @@ impl ConwayBets {
             description,
             end_time,
             outcomes,
-            total_liquidity: Amount::from(0),
+            // Fix: Use Amount::ZERO instead of Amount::from(0)
+            total_liquidity: Amount::ZERO,
             is_resolved: false,
             winning_outcome: None,
             state_hash,

@@ -73,7 +73,8 @@ export default defineConfig({
   resolve: {
     alias: {
       // ⚠️ IMPORTANT: Force the JS import to match the WASM location.
-      '@linera/client': path.resolve(__dirname, 'node_modules/@linera/client/dist/linera.js')
+      '@linera/client': path.resolve(__dirname, 'node_modules/@linera/client/dist/linera.js'),
+      '@linera/client-index': path.resolve(__dirname, 'node_modules/@linera/client/dist/index.js')
     }
   },
   plugins: [

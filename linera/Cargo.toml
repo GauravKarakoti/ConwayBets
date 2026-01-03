@@ -4,15 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-linera-sdk = { version = "0.15.6", features = ["test"] }
+linera-sdk = { version = "0.15.6" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-async-graphql = "7.0.2" # Required for the Service
+async-graphql = "7.0.2"
 bcs = "0.1.6"
 
+[dev-dependencies]
+# ADDED features = ["test"] here for tests
+linera-sdk = { version = "0.15.6", features = ["test"] }
+
 [lib]
-# "rlib" allows the binaries to import from lib.rs
-# "cdylib" is kept if you ever need the single wasm (optional here but good practice)
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]

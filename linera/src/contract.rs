@@ -4,13 +4,13 @@ use linera_sdk::{
     Contract, ContractRuntime,
 };
 use serde::{Deserialize, Serialize};
-use linera_sdk::bcs;
-use linera_sdk::views::linera_views::store::ReadableKeyValueStore;
-use linera_sdk::views::linera_views::store::WritableKeyValueStore;
+// Import Batch and WriteOperation correctly
+use linera_sdk::views::linera_views::batch::{Batch, WriteOperation}; 
+use linera_sdk::views::linera_views::store::{ReadableKeyValueStore, WritableKeyValueStore};
 
 pub struct ConwayBetsContract {
     state: ConwayBets,
-    runtime: ContractRuntime<Self>, // Added runtime field
+    runtime: ContractRuntime<Self>,
 }
 
 impl WithContractAbi for ConwayBetsContract {
@@ -24,7 +24,7 @@ pub struct InstantiationArgument {
     pub initial_markets: Vec<String>,
 }
 
-const STATE_KEY: &[u8] = b"conway_bets_state"; // Define a key for storage
+const STATE_KEY: &[u8] = b"conway_bets_state";
 
 impl Contract for ConwayBetsContract {
     type Message = ConwayBetsMessage;
@@ -33,11 +33,14 @@ impl Contract for ConwayBetsContract {
     type EventValue = ();
 
     async fn load(runtime: ContractRuntime<Self>) -> Self {
-        // Fix: Read bytes from the key-value store and deserialize
-        let state = match runtime.key_value_store().read_value(STATE_KEY).await {     
-            Ok(Some(bytes)) => bcs::from_bytes(&bytes).unwrap_or_default(),
-            _ => ConwayBets::default(),
-        };
+        // Fix: Read and deserialize ConwayBets directly.
+        // read_value returns Result<Option<T>, ...>
+        let state = runtime.key_value_store()
+            .read_value::<ConwayBets>(STATE_KEY)
+            .await
+            .expect("Failed to read state")
+            .unwrap_or_default();
+            
         ConwayBetsContract { state, runtime }
     }
 
@@ -70,10 +73,18 @@ impl Contract for ConwayBetsContract {
     }
 
     async fn store(self) {
-        // Fix: Serialize and write the state back to storage
+        // Fix: Use correct Batch and WriteOperation types
         let bytes = bcs::to_bytes(&self.state).expect("Failed to serialize state");
-        self.runtime.key_value_store().write_batch(vec![
-            (STATE_KEY.to_vec(), linera_sdk::linera_base_types::BatchOperation::Put(bytes))
-        ]).await.expect("Failed to store state");
+        
+        let batch = Batch {
+            operations: vec![
+                WriteOperation::Put {
+                    key: STATE_KEY.to_vec(),
+                    value: bytes,
+                }
+            ],
+        };
+
+        self.runtime.key_value_store().write_batch(batch).await.expect("Failed to store state");
     }
 }

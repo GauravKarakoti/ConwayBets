@@ -6,7 +6,10 @@
     "paths": {       // 2. Add this mapping
       "@linera/client": [
         "./node_modules/@linera/client/dist/linera.d.ts" 
-      ]
+      ],
+      "@linera/client-index": [
+        "./node_modules/@linera/client/dist/index.d.ts" 
+      ],
     },
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

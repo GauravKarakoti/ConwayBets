@@ -6,7 +6,6 @@ use linera_sdk::{
 };
 use std::sync::Arc;
 use linera_sdk::views::linera_views::store::ReadableKeyValueStore;
-use linera_sdk::bcs;
 
 pub struct ConwayBetsService {
     state: Arc<ConwayBets>,
@@ -24,11 +23,13 @@ impl Service for ConwayBetsService {
     type Parameters = ();
 
     async fn new(runtime: ServiceRuntime<Self>) -> Self {
-        // Fix: Load state from key-value store for the service
-        let state = match runtime.key_value_store().read_value(STATE_KEY).await { 
-            Ok(Some(bytes)) => bcs::from_bytes(&bytes).unwrap_or_default(),
-            _ => ConwayBets::default(),
-        };
+        // Fix: Read and deserialize ConwayBets directly
+        let state = runtime.key_value_store()
+            .read_value::<ConwayBets>(STATE_KEY)
+            .await
+            .expect("Failed to read state")
+            .unwrap_or_default();
+            
         ConwayBetsService {
             state: Arc::new(state),
         }
@@ -50,7 +51,6 @@ struct QueryRoot {
 
 #[Object]
 impl QueryRoot {
-    // Implements the 'markets' query expected by the frontend
     async fn markets(&self, limit: Option<usize>, offset: Option<usize>) -> Vec<MarketGql> {
         let limit = limit.unwrap_or(50);
         let offset = offset.unwrap_or(0);
@@ -62,16 +62,13 @@ impl QueryRoot {
             .collect()
     }
 
-    // Implements the 'market' query expected by the frontend
     async fn market(&self, id: String) -> Option<MarketGql> {
-        // Note: Simple matching on the numeric ID part for now
         self.state.markets.values()
             .find(|m| m.id.id.to_string() == id) 
             .map(|m| MarketGql::from(m))
     }
 }
 
-// A GraphQL-compatible wrapper for the Market struct
 #[derive(SimpleObject)]
 struct MarketGql {
     id: String,
@@ -90,7 +87,7 @@ struct MarketGql {
 impl From<&Market> for MarketGql {
     fn from(m: &Market) -> Self {
         MarketGql {
-            id: m.id.id.to_string(), // Exposing just the ID part for simplicity
+            id: m.id.id.to_string(),
             title: m.title.clone(),
             description: m.description.clone(),
             creator: m.creator.to_string(),
@@ -99,9 +96,8 @@ impl From<&Market> for MarketGql {
             total_liquidity: m.total_liquidity.to_string(),
             is_resolved: m.is_resolved,
             winning_outcome: m.winning_outcome,
-            // Simple hex representation for state hash
             state_hash: m.state_hash.iter().map(|b| format!("{:02x}", b)).collect(),
-            created_at: 0, // Placeholder as createdAt is not in State
+            created_at: 0,
         }
     }
 }
