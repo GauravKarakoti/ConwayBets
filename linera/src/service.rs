@@ -1,4 +1,4 @@
-#![cfg_attr(target_arch = "wasm32", no_main)] // <--- ADD THIS LINE
+#![cfg_attr(target_arch = "wasm32", no_main)]
 
 use async_graphql::{EmptyMutation, EmptySubscription, Object, Request, Response, Schema, SimpleObject};
 use linera::{ConwayBets, Market};
@@ -25,11 +25,16 @@ impl Service for ConwayBetsService {
     type Parameters = ();
 
     async fn new(runtime: ServiceRuntime<Self>) -> Self {
-        let state = runtime.key_value_store()
-            .read_value_bytes::<>(STATE_KEY)
+        // FIX: Read bytes and deserialize them
+        let state_bytes = runtime.key_value_store()
+            .read_value_bytes(STATE_KEY)
             .await
-            .expect("Failed to read state")
-            .unwrap_or_default();
+            .expect("Failed to read state");
+
+        let state: ConwayBets = match state_bytes {
+            Some(bytes) => bcs::from_bytes(&bytes).expect("Failed to deserialize state"),
+            None => ConwayBets::default(),
+        };
             
         ConwayBetsService {
             state: Arc::new(state),

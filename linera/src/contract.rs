@@ -1,4 +1,4 @@
-#![cfg_attr(target_arch = "wasm32", no_main)] // <--- ADD THIS LINE
+#![cfg_attr(target_arch = "wasm32", no_main)]
 
 use linera::{ConwayBets, ConwayBetsAbi, ConwayBetsMessage, Operation};
 use linera_sdk::{
@@ -6,9 +6,8 @@ use linera_sdk::{
     Contract, ContractRuntime,
 };
 use serde::{Deserialize, Serialize};
-// Fix import path: usually linera_sdk::views points directly to the views crate content
-use linera_sdk::views::WriteOperation;
-use async_graphql::BatchRequest::Batch; 
+// FIX: Import Batch and WriteOperation from linera_views
+use linera_sdk::views::linera_views::batch::{Batch, WriteOperation};
 use linera_sdk::views::linera_views::store::WritableKeyValueStore;
 use linera_sdk::views::linera_views::store::ReadableKeyValueStore; 
 
@@ -37,11 +36,16 @@ impl Contract for ConwayBetsContract {
     type EventValue = ();
 
     async fn load(runtime: ContractRuntime<Self>) -> Self {
-        let state = runtime.key_value_store()
-            .read_value_bytes::<>(STATE_KEY)
+        // FIX: Read bytes and deserialize them
+        let state_bytes = runtime.key_value_store()
+            .read_value_bytes(STATE_KEY)
             .await
-            .expect("Failed to read state")
-            .unwrap_or_default();
+            .expect("Failed to read state");
+            
+        let state: ConwayBets = match state_bytes {
+            Some(bytes) => bcs::from_bytes(&bytes).expect("Failed to deserialize state"),
+            None => ConwayBets::default(),
+        };
             
         ConwayBetsContract { state, runtime }
     }
@@ -77,6 +81,7 @@ impl Contract for ConwayBetsContract {
     async fn store(self) {
         let bytes = bcs::to_bytes(&self.state).expect("Failed to serialize state");
         
+        // FIX: Use the correct Batch structure from linera_views
         let batch = Batch {
             operations: vec![
                 WriteOperation::Put {
