@@ -1,5 +1,3 @@
-#![cfg_attr(target_arch = "wasm32", no_main)]
-
 use async_graphql::{EmptyMutation, EmptySubscription, Object, Request, Response, Schema, SimpleObject};
 use linera::{ConwayBets, Market};
 use linera_sdk::{
@@ -7,6 +5,8 @@ use linera_sdk::{
     Service, ServiceRuntime,
 };
 use std::sync::Arc;
+use linera_sdk::views::linera_views::store::ReadableKeyValueStore;
+use linera_sdk::bcs;
 
 pub struct ConwayBetsService {
     state: Arc<ConwayBets>,
@@ -18,19 +18,23 @@ impl WithServiceAbi for ConwayBetsService {
 
 linera_sdk::service!(ConwayBetsService);
 
+const STATE_KEY: &[u8] = b"conway_bets_state";
+
 impl Service for ConwayBetsService {
     type Parameters = ();
 
     async fn new(runtime: ServiceRuntime<Self>) -> Self {
-        // Fix: Load the actual state from storage, or default if empty
-        let state = runtime.application_id().unwrap_or_default();
+        // Fix: Load state from key-value store for the service
+        let state = match runtime.key_value_store().read_value(STATE_KEY).await { 
+            Ok(Some(bytes)) => bcs::from_bytes(&bytes).unwrap_or_default(),
+            _ => ConwayBets::default(),
+        };
         ConwayBetsService {
             state: Arc::new(state),
         }
     }
 
     async fn handle_query(&self, query: Request) -> Response {
-        // Fix: Pass the state to QueryRoot
         let schema = Schema::build(
             QueryRoot { state: self.state.clone() }, 
             EmptyMutation, 

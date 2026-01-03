@@ -69,9 +69,7 @@ impl Receipt {
 pub struct ConwayBets {
     pub markets: BTreeMap<MarketId, Market>,
     pub user_positions: BTreeMap<AccountOwner, Vec<UserPosition>>,
-    #[serde(skip)] 
     pub next_market_id: u64,
-    #[serde(skip)]
     pub next_bet_id: u64,
 }
 
