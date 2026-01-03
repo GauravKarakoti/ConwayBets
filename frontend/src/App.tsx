@@ -116,10 +116,18 @@ function App() {
 
         <main className="app-main">
           {!isLineraReady ? (
-             // Show a prompt if wallet is not connected/ready
-             <div className="connect-prompt">
-               <p>Please connect your wallet to view markets.</p>
-             </div>
+            // CHECK: If wallet is connected but Linera isn't ready, show loading
+            primaryWallet ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Initializing Linera Client...</p>
+              </div>
+            ) : (
+              // Show prompt only if no wallet is connected
+              <div className="connect-prompt">
+                <p>Please connect your wallet to view markets.</p>
+              </div>
+            )
           ) : (
             <>
               {activeTab === 'markets' && (

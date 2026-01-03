@@ -88,14 +88,7 @@ export class ConwayBetsClient {
           markets(limit: $limit, offset: $offset) {
             id
             title
-            description
-            creator
-            endTime
-            outcomes
-            totalLiquidity
-            isResolved
-            winningOutcome
-            stateHash
+            // ... (rest of fields)
             createdAt
           }
         }
@@ -103,7 +96,15 @@ export class ConwayBetsClient {
       variables: { limit, offset },
     };
 
-    const result = await lineraAdapter.queryApplication<{ data: { markets: Market[] } }>(query);
+    const result = await lineraAdapter.queryApplication<{ data?: { markets: Market[] }, errors?: any }>(query);
+    
+    // FIX: Check if data exists before accessing it
+    if (!result.data) {
+      console.warn('getAllMarkets returned no data:', result);
+      // You can throw an error here to be caught by useMarkets, or return an empty array
+      throw new Error('Failed to fetch markets: No data returned from chain');
+    }
+
     return result.data.markets;
   }
 
@@ -130,6 +131,11 @@ export class ConwayBetsClient {
     };
 
     const result = await lineraAdapter.queryApplication<{ data: { market: Market } }>(query);
+    
+    if (!result.data) {
+       throw new Error(`Market not found: ${marketId}`);
+    }
+
     return result.data.market;
   }
 

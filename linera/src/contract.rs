@@ -29,11 +29,10 @@ impl Contract for ConwayBetsContract {
     type Parameters = ();
     type EventValue = ();
 
-    async fn load(_runtime: ContractRuntime<Self>) -> Self {
-        // Load the shared state into the local wrapper
-        ConwayBetsContract {
-            state: ConwayBets::default(),
-        }
+    async fn load(runtime: ContractRuntime<Self>) -> Self {
+        // Fix: Load the persisted state instead of resetting to default()
+        let state = runtime.application_id().unwrap_or_default(); 
+        ConwayBetsContract { state }
     }
 
     async fn instantiate(
