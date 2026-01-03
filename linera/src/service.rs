@@ -1,3 +1,5 @@
+#![cfg_attr(target_arch = "wasm32", no_main)] // <--- ADD THIS LINE
+
 use async_graphql::{EmptyMutation, EmptySubscription, Object, Request, Response, Schema, SimpleObject};
 use linera::{ConwayBets, Market};
 use linera_sdk::{
@@ -23,9 +25,8 @@ impl Service for ConwayBetsService {
     type Parameters = ();
 
     async fn new(runtime: ServiceRuntime<Self>) -> Self {
-        // Fix: Read and deserialize ConwayBets directly
         let state = runtime.key_value_store()
-            .read_value::<ConwayBets>(STATE_KEY)
+            .read_value_bytes::<>(STATE_KEY)
             .await
             .expect("Failed to read state")
             .unwrap_or_default();
