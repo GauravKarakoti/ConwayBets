@@ -2,6 +2,12 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2022",
+    "baseUrl": ".",  // 1. Add this to establish the root for paths
+    "paths": {       // 2. Add this mapping
+      "@linera/client": [
+        "./node_modules/@linera/client/dist/linera.d.ts" 
+      ]
+    },
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",

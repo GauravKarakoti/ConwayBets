@@ -74,7 +74,7 @@ export class LineraAdapter {
         const chainId = await faucet.claimChain(wallet, address);
 
         const signer = await new DynamicSigner(dynamicWallet);
-        const client = await new Client(wallet, signer);
+        const client = await new Client(wallet, signer, false);
         console.log("✅ Linera wallet created successfully!");
 
         this.provider = {
@@ -107,8 +107,7 @@ export class LineraAdapter {
     if (!this.provider) throw new Error("Not connected to Linera");
     if (!appId) throw new Error("Application ID is required");
 
-    const chain = await this.provider.client.chain(this.provider.chainId);
-    const application = await chain.application(appId);
+    const application = await this.provider.client.application(appId);
 
     if (!application) throw new Error("Failed to get application");
     console.log("✅ Linera application set successfully!");
