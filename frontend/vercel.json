@@ -9,9 +9,23 @@
         },
         {
           "key": "Cross-Origin-Embedder-Policy",
-          "value": "credentialless"
+          "value": "require-corp"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/faucet-proxy",
+      "destination": "https://faucet.testnet-conway.linera.net"
+    },
+    {
+      "source": "/faucet-proxy/(.*)",
+      "destination": "https://faucet.testnet-conway.linera.net/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
