@@ -96,10 +96,7 @@ export default defineConfig({
     }
   },
   build: {
-    target: 'esnext',
-    rollupOptions: {
-      external: ["@linera/client"],
-    },
+    target: 'esnext'
   },
   esbuild: {
     supported: {
